@@ -22,6 +22,7 @@ REQUIRED_KEYWORDS = [
 ]
 
 # Add clearance types to exclude, e.g. 'top secret', 'ts/sci', 'polygraph'
+# If you don't need clearance filtering, delete this section and the clearance check in filter_job
 EXCLUDE_CLEARANCE = [
     ''
 ]
@@ -39,11 +40,6 @@ EXCLUDE_LOCATIONS = [
 # Add acceptable commute areas, e.g. 'your-city', 'nearby-city'
 ACCEPTABLE_AREAS = [
     'remote'
-]
-
-# Add locations that are acceptable but far commute, e.g. 'downtown', 'city-center'
-FAR_COMMUTE = [
-    ''
 ]
 
 # Add or remove legitimate job platforms
@@ -146,6 +142,7 @@ def filter_job(job_data):
         if exclude in title:
             return False, f"Excluded keyword: {exclude}"
     
+    # Check for clearance requirements - delete this block if you deleted EXCLUDE_CLEARANCE
     combined = f"{title} {description}".lower()
     for phrase in EXCLUDE_CLEARANCE:
         if phrase and phrase in combined:
@@ -158,9 +155,8 @@ def filter_job(job_data):
         return False, "Excluded location"
     
     is_acceptable = any(area in location for area in ACCEPTABLE_AREAS)
-    is_far = any(far in location for far in FAR_COMMUTE)
     
-    if not is_acceptable and not is_far:
+    if not is_acceptable:
         return False, "Outside commute area"
     
     if not is_legitimate_ats(apply_url):
@@ -203,13 +199,10 @@ def send_email(filtered_jobs, stats):
         location = job.get('location', {}).get('display_name', 'Unknown')
         apply_url = job.get('redirect_url', '#')
         
-        is_far = any(far in location.lower() for far in FAR_COMMUTE)
-        location_note = "(Far commute)" if is_far else ""
-        
         email_body += f"""
 {title}
 {company}
-{location} {location_note}
+{location}
 Apply: {apply_url}
 
 """

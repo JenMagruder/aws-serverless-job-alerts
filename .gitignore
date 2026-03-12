@@ -1,0 +1,57 @@
+# Python dependencies
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Lambda dependencies - catch everything in job_alerts except the function itself
+lambda/job_alerts/__pycache__/
+lambda/job_alerts/*.dist-info/
+lambda/job_alerts/bin/
+lambda/job_alerts/certifi/
+lambda/job_alerts/certifi-*/
+lambda/job_alerts/charset_normalizer/
+lambda/job_alerts/charset_normalizer-*/
+lambda/job_alerts/idna/
+lambda/job_alerts/idna-*/
+lambda/job_alerts/requests/
+lambda/job_alerts/requests-*/
+lambda/job_alerts/urllib3/
+lambda/job_alerts/urllib3-*/
+lambda/job_alerts/feedparser/
+lambda/job_alerts/feedparser-*/
+lambda/job_alerts/sgmllib.py
+lambda/job_alerts/sgmllib3k-*/
+
+# Lambda package
+lambda/job_alerts.zip
+*.zip
+
+# AWS credentials
+*.pem
+*.key
+
+# Environment variables
+.env
+config.yaml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Test outputs
+*.json
+output.json
+
+# Log files
+*.log

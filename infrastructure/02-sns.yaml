@@ -1,0 +1,24 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'SNS topic for job alerts'
+
+Parameters:
+  EmailAddress:
+    Type: String
+    Description: Email to receive job alerts
+    Default: "{ENTER_YOUR_EMAIL_HERE}"
+
+Resources:
+  JobAlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: job-alerts-topic
+      DisplayName: Job Alerts
+      Subscription:
+        - Endpoint: !Ref EmailAddress
+          Protocol: email
+
+Outputs:
+  TopicArn:
+    Value: !Ref JobAlertsTopic
+    Export:
+      Name: job-alerts-SNSTopicArn

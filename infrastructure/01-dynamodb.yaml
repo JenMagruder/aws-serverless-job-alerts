@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'DynamoDB tables for job alerts'
+
+Resources:
+  JobsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: job-alerts-jobs
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: job_id
+          AttributeType: S
+        - AttributeName: source
+          AttributeType: S
+      KeySchema:
+        - AttributeName: job_id
+          KeyType: HASH
+        - AttributeName: source
+          KeyType: RANGE
+
+  SeenJobsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: job-alerts-seen
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: job_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: job_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiration_time
+        Enabled: true
+
+Outputs:
+  JobsTableName:
+    Value: !Ref JobsTable
+    Export:
+      Name: job-alerts-JobsTableName
+  
+  SeenJobsTableName:
+    Value: !Ref SeenJobsTable
+    Export:
+      Name: job-alerts-SeenJobsTableName

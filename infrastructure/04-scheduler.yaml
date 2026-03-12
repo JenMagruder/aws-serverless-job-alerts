@@ -1,0 +1,22 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EventBridge scheduler for job alerts'
+
+Resources:
+  DailyScraperRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: job-alerts-trigger
+      Description: Trigger job alerts daily at {"ENTER YOUR TIMEZONE HERE"}
+      ScheduleExpression: 'cron({ENTER YOUR CRON EXPRESSION HERE})'
+      State: ENABLED
+      Targets:
+        - Arn: !ImportValue job-alerts-FunctionArn
+          Id: JobAlertsTarget
+
+  EventBridgeLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !ImportValue job-alerts-FunctionName
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt DailyScraperRule.Arn

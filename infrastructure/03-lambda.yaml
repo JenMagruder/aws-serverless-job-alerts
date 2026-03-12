@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Lambda function for job alerts'
+
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: job-alerts-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: JobAlertsPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:Scan
+                Resource:
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/job-alerts-*'
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource:
+                  - !ImportValue job-alerts-SNSTopicArn
+
+  JobAlertsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: job-alerts-fetch
+      Runtime: python3.11
+      Handler: lambda_function.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 60
+      MemorySize: 256
+      Environment:
+        Variables:
+          JOBS_TABLE_NAME: !ImportValue job-alerts-JobsTableName
+          SEEN_TABLE_NAME: !ImportValue job-alerts-SeenJobsTableName
+          SNS_TOPIC_ARN: !ImportValue job-alerts-SNSTopicArn
+          MIN_SALARY: '85000'
+      Code:
+        ZipFile: |
+          import json
+          def lambda_handler(event, context):
+              return {'statusCode': 200, 'body': json.dumps('Placeholder')}
+
+Outputs:
+  FunctionArn:
+    Value: !GetAtt JobAlertsFunction.Arn
+    Export:
+      Name: job-alerts-FunctionArn
+  
+  FunctionName:
+    Value: !Ref JobAlertsFunction
+    Export:
+      Name: job-alerts-FunctionName

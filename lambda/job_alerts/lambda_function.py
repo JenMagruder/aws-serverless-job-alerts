@@ -11,7 +11,7 @@ sns = boto3.client('sns')
 JOBS_TABLE = os.environ['JOBS_TABLE_NAME']
 SEEN_TABLE = os.environ['SEEN_TABLE_NAME']
 SNS_TOPIC = os.environ['SNS_TOPIC_ARN']
-MIN_SALARY = int(os.environ.get('MIN_SALARY', '85000'))
+MIN_SALARY = int(os.environ.get('MIN_SALARY', 'input')) #or comment out
 
 # Add job titles you are looking for
 REQUIRED_KEYWORDS = [

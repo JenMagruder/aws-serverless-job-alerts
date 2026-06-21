@@ -1,10 +1,10 @@
 # AWS Serverless Job Alert System
 
-I built this to eliminate the time I was spending manually searching job boards every day. This system automates the entire process using AWS serverless services so I can focus on applying instead of searching.
+Automated job search system that finds jobs, filters by your criteria, and emails you daily.
 
 ## What It Does
 
-Searches job boards daily, filters results by location and keywords, blocks duplicates, and emails you only the jobs that actually match your criteria.
+Searches job boards daily, filters results by location and keywords, blocks duplicates, and emails you only relevant positions.
 
 ## Architecture
 
@@ -18,63 +18,72 @@ AWS account with CLI configured. SerpAPI account. Python 3.11. PowerShell or Bas
 
 Sign up at serpapi.com and get your free API key.
 
-Open lambda_function.py. This is where all your personal configuration lives. You will update the search terms, location filters, and keyword exclusions to match what you are actually looking for. Each section has comments explaining what it controls.
+SerpAPI offers 250 free searches per month. Each job title you search counts as one search. For example, searching for "cloud engineer", "devops engineer", and "aws cloud engineer" is 3 searches per run. With two runs per day, plan your search terms accordingly to stay within the free tier.
 
-The filters that matter most are EXCLUDE_KEYWORDS for titles you want to skip like senior or director, EXCLUDE_LOCATIONS for cities or states outside your area, ACCEPTABLE_AREAS for the commute zones you will actually consider, and BLOCKED_PLATFORMS for job boards you do not want results from.
+Edit lambda_function.py and update REQUIRED_KEYWORDS, EXCLUDE_KEYWORDS, EXCLUDE_LOCATIONS, ACCEPTABLE_AREAS, FAR_COMMUTE, and the searches list. Update location in params to your state.
 
-Important: do not put your SerpAPI key in the code. It gets set as a Lambda environment variable during deployment.
+**Important: Do not hardcode your SerpAPI key in the code. It will be set as an environment variable in the deployment step below.**
 
-Deploy the stacks in order:
+Deploy stacks in order. Wait 30 to 60 seconds between each stack to allow resources to finish provisioning before the next stack tries to reference them.
 
-```bash
+```powershell
 # DynamoDB tables
 aws cloudformation create-stack --stack-name job-alerts-dynamodb --template-body file://infrastructure/01-dynamodb.yaml --region us-east-1
+```
 
+Wait 30 to 60 seconds.
+
+```powershell
 # SNS topic
-aws cloudformation create-stack --stack-name job-alerts-sns --parameters ParameterKey=EmailAddress,ParameterValue=your-email@example.com --template-body file://infrastructure/02-sns.yaml --region us-east-1
+aws cloudformation create-stack --stack-name job-alerts-sns --template-body file://infrastructure/02-sns.yaml --parameters ParameterKey=EmailAddress,ParameterValue=your-email@example.com --region us-east-1
+```
 
-# Confirm the SNS subscription in your email before continuing
+Wait 30 to 60 seconds. Confirm SNS subscription in your email. Check your spam folder if you do not see it.
 
+```powershell
 # Package Lambda
 cd lambda/job_alerts
 pip install -r requirements.txt -t .
 Compress-Archive -Path * -DestinationPath ../job_alerts.zip -Force
 cd ../..
+```
 
+```powershell
 # Deploy Lambda
-aws cloudformation create-stack --stack-name job-alerts-lambda --template-body file://infrastructure/03-lambda.yaml --capabilities CAPABILITY_IAM --region us-east-1
+aws cloudformation create-stack --stack-name job-alerts-lambda --template-body file://infrastructure/03-lambda.yaml --capabilities CAPABILITY_NAMED_IAM --region us-east-1
+```
 
-# Set environment variables
+Wait 30 to 60 seconds.
+
+```powershell
+# Set environment variables (replace YOUR-ACCOUNT-ID and your-serpapi-key)
 aws lambda update-function-configuration --function-name job-alerts-fetch --environment "Variables={JOBS_TABLE_NAME=job-alerts-jobs,SEEN_TABLE_NAME=job-alerts-seen,SNS_TOPIC_ARN=arn:aws:sns:us-east-1:YOUR-ACCOUNT-ID:job-alerts-topic,MIN_SALARY=85000,SERPAPI_KEY=your-serpapi-key}" --region us-east-1
 
 # Deploy scheduler
 aws cloudformation create-stack --stack-name job-alerts-scheduler --template-body file://infrastructure/04-scheduler.yaml --region us-east-1
 ```
 
-Test it once everything is deployed:
-
-```bash
+Test it:
+```powershell
 aws lambda invoke --function-name job-alerts-fetch --region us-east-1 output.json
 aws logs tail /aws/lambda/job-alerts-fetch --since 2m --format short
 ```
 
-If you get an email you are good to go. If not check your spam folder first. If it is not there check that your SNS subscription is confirmed, your environment variables are set correctly, and your CloudWatch logs are not showing errors.
-
 ## Cost
 
-AWS services used stay within free tier limits. SerpAPI offers 100 free searches per month. Current configuration stays free.
+AWS services used stay within free tier limits. SerpAPI offers 250 free searches per month. Current configuration stays free.
 
 ## How It Works
 
-EventBridge triggers Lambda on your schedule. Lambda searches SerpAPI for the job titles you configured. It filters results by location, seniority level, and any keywords you want to exclude. It checks DynamoDB to skip jobs you have already seen. New matches get stored in DynamoDB and emailed to you via SNS.
+EventBridge triggers Lambda daily. Lambda searches SerpAPI for configured job titles. Filters results by location, seniority, clearance requirements. Checks DynamoDB to skip already seen jobs. Stores new jobs in DynamoDB. Sends email via SNS with filtered results.
 
 ## Troubleshooting
 
-No email: check your spam folder first. If it is not there confirm your SNS subscription is active, check CloudWatch logs, and verify your environment variables are set.
+No email received: Check SNS subscription is confirmed, check your spam folder, check CloudWatch logs for errors, verify Lambda has correct environment variables.
 
-Too many results: add more terms to EXCLUDE_KEYWORDS, tighten ACCEPTABLE_AREAS, or add platforms to BLOCKED_PLATFORMS.
+Too many jobs: Add more exclusions to EXCLUDE_KEYWORDS, tighten ACCEPTABLE_AREAS, add more items to BLOCKED_PLATFORMS.
 
-Too few results: remove some exclusions, add more search terms, or expand your location filters.
+Too few jobs: Remove some exclusions, add more search terms, expand ACCEPTABLE_AREAS.
 
 ## License
 
